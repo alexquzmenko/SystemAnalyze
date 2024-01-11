@@ -1,27 +1,43 @@
+import numpy as np
 import json
-def task(range1, range2, range3):
-    r1 = json.loads(range1)
-    r2 = json.loads(range2)
-    r3 = json.loads(range3)
-
-    size = len(r1)
-    sums = []
-    for i in range(size):
-        isum = 0
-        isum += r1.index(f'O{i + 1}')
-        isum += r2.index(f'O{i + 1}')
-        isum += r3.index(f'O{i + 1}')
-        sums.append(isum)
-    Dmax_sums = []
-    for i in range(size):
-        Dmax_sums.append(3 * (i + 1))
-    average = sum(sums) / size
-    D = sum([(i - average) ** 2 for i in sums]) / (size - 1)
-    Dmax = sum([(i - average) ** 2 for i in Dmax_sums]) / (size - 1)
-    return round(D / Dmax, 2)
 
 
-range1 = '["O1","O2","O3"]'
-range2 = '["O1","O3","O2"]'
-range3 = '["O1","O3","O2"]'
-print(task(range1, range2, range3))
+def task(*rankings):
+    num_experts = len(rankings)
+    rank_template = {}
+    rank_counter = 0
+
+    for element in rankings[0]:
+        if isinstance(element, list):
+            for sub_elem in element:
+                rank_template[sub_elem] = rank_counter
+                rank_counter += 1
+        else:
+            rank_template[element] = rank_counter
+            rank_counter += 1
+
+    rank_matrix = []
+    for ranking in rankings:
+        order_list = [0] * len(rank_template)
+        for i, item in enumerate(ranking):
+            if isinstance(item, list):
+                for sub_item in item:
+                    order_list[rank_template[sub_item]] = i + 1
+            else:
+                order_list[rank_template[item]] = i + 1
+        rank_matrix.append(order_list)
+
+    rank_array = np.array(rank_matrix)
+    sum_ranks = np.sum(rank_array, axis=0)
+
+    D = np.var(sum_ranks) * rank_counter / (rank_counter - 1)
+    D_max = (num_experts ** 2) * ((rank_counter ** 3 - rank_counter) / 12) / (rank_counter - 1)
+
+    return format(D / D_max, ".2f")
+
+
+ranking_a = [1, [2, 3], 4, [5, 6, 7], 8, 9, 10]
+ranking_b = [[1, 2], [3, 4, 5], 6, 7, 9, [8, 10]]
+ranking_c = [3, [1, 4], 2, 6, [5, 7, 8], [9, 10]]
+
+print(task(ranking_a, ranking_b, ranking_c))
